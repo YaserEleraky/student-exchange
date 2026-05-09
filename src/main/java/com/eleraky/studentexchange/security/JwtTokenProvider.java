@@ -1,4 +1,5 @@
 package com.eleraky.studentexchange.security;
+
 // ============================================================
 // JJWT: مكتبة JSON Web Token لـ Java
 // Jwts: الفئة الرئيسية لبناء وتحليل JWT
@@ -7,6 +8,7 @@ package com.eleraky.studentexchange.security;
 // Keys: لإنشاء مفاتيح التوقيع
 // مصدرها: github.com/jwtk/jjwt
 // ============================================================
+import com.eleraky.studentexchange.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
@@ -17,8 +19,6 @@ import io.jsonwebtoken.security.Keys;
 // Authentication: يمثل عملية المصادقة في Spring Security
 // ============================================================
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 // ============================================================
@@ -30,8 +30,6 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.stream.Collectors;
-
 /**
  * JwtTokenProvider: مسؤول عن كل ما يتعلق بـ JWT (JSON Web Token)
  *
@@ -59,6 +57,13 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JwtTokenProvider {
+
+    @Value("${app.jwt.secret:this-is-a-very-long-secret-key-for-jwt-token-generation-2024-minimum-256-bits}")
+    private String jwtSecret;
+
+    @Value("${app.jwt.expiration:86400000}")
+    private long jwtExpirationMs;
+
     // ============================================================
     // @Value("${...}") : يقرأ القيمة من application.yml
     //
@@ -76,15 +81,8 @@ public class JwtTokenProvider {
     // 1. طويلاً (256 بت على الأقل)
     // 2. في متغير بيئة (وليس في الكود)
     // 3. مختلفاً لكل بيئة
-    // ============================================================
-    @Value("${app.jwt.secret:this-is-a-very-long-secret-key-for-jwt-token-generation-2024-minimum-256-bits}")
-    private String jwtSecret;
-    // ============================================================
-    // مدة صلاحية التوكن (بالمللي ثانية)
-    // 86400000 = 24 ساعة × 60 دقيقة × 60 ثانية × 1000 مللي ثانية
-    // ============================================================
-    @Value("${app.jwt.expiration:86400000}")
-    private long jwtExpirationMs;
+    // ===========================================================
+
     /**
      * getSigningKey: إنشاء مفتاح التوقيع من النص السري
      *
@@ -94,22 +92,12 @@ public class JwtTokenProvider {
      * @return SecretKey مفتاح سري للتوقيع
      */
     private SecretKey getSigningKey() {
-        // ============================================================
-        // تحويل النص السري إلى bytes باستخدام UTF-8
-        // ============================================================
-        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        // ============================================================
-        // Keys.hmacShaKeyFor(): ينشئ مفتاح HMAC-SHA
-        // يجب أن يكون المفتاح 256 بت (32 بايت) على الأقل
-        // إذا كان أقل، JJWT سترمي WeakKeyException
-        // ============================================================
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
-
     /**
      * generateToken: إنشاء JWT Token جديد
      *
-     * @param authentication كائن المصادقة من Spring Security
+     * @paramauthentication كائن المصادقة من Spring Security
      * @return JWT Token كنص
      *
      * سير العمل:
@@ -119,16 +107,10 @@ public class JwtTokenProvider {
      * 4. نوقع التوكن بالمفتاح السري
      * 5. نرجع التوكن كنص
      */
-
-    public String generateToken(Authentication authentication){
-        // ============================================================
-        // getPrincipal(): ترجع الكائن الأساسي في Authentication
-        // في حالتنا، هو UserPrincipal
-        // ============================================================
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
+    public String generateToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+
         // ============================================================
         // Jwts.builder(): بدء بناء JWT جديد
         //
@@ -150,17 +132,15 @@ public class JwtTokenProvider {
         // .compact(): تحويل كل هذا إلى نص JWT النهائي
         // ============================================================
         return Jwts.builder()
-                .subject(userPrincipal.getId().toString())
-                .claim("username", userPrincipal.getUsername())
-                .claim("fullName", userPrincipal.getFullName())
-                .claim("email", userPrincipal.getEmail())
-                .claim("roles", userPrincipal.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+                .subject(user.getId().toString())
+                .claim("username", user.getUsername())
+                .claim("fullName", user.getFullName())
+                .claim("email", user.getEmail())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
-
     /**
      * getUserIdFromToken: استخراج ID المستخدم من JWT Token
      *
@@ -172,8 +152,7 @@ public class JwtTokenProvider {
      * 2. نستخرج الـ Claims (البيانات)
      * 3. نرجع Subject (الذي وضعنا فيه ID المستخدم)
      */
-
-    public Long getUserIdFromToken(String token){
+    public Long getUserIdFromToken(String token) {
         // ============================================================
         // Jwts.parser(): بدء تحليل JWT
         // .verifyWith(): التحقق من التوقيع باستخدام المفتاح السري
@@ -181,7 +160,6 @@ public class JwtTokenProvider {
         // .parseSignedClaims(): تحليل التوكن واستخراج الـ Claims
         // .getPayload(): الحصول على البيانات (Payload)
         // ============================================================
-
         Claims claims = Jwts.parser().verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
@@ -192,7 +170,6 @@ public class JwtTokenProvider {
         // ============================================================
         return Long.parseLong(claims.getSubject());
     }
-
     /**
      * validateToken: التحقق من صحة JWT Token
      *
@@ -204,24 +181,12 @@ public class JwtTokenProvider {
      * 2. التوكن لم ينتهِ صلاحيته
      * 3. صيغة التوكن صحيحة
      */
-    public boolean validateToken(String token){
-        try{
-            // ============================================================
-            // محاولة تحليل التوكن
-            // إذا فشل، يعني أن التوكن غير صالح
-            // ============================================================
+    public boolean validateToken(String token) {
+        try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
             return true;
-
         } catch (JwtException | IllegalArgumentException e) {
-            // ============================================================
-            // JwtException: خطأ في JWT (توقيع خاطئ، منتهي الصلاحية، إلخ)
-            // IllegalArgumentException: التوكن فارغ أو null
-            // ============================================================
             return false;
         }
     }
-
-
-
 }

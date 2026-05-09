@@ -145,22 +145,11 @@ public class UserServiceImpl implements UserService{
      * @throws RuntimeException إذا كانت البيانات خاطئة
      */
     @Override
-    public User authenticateUser(String username, String password) {
-        // البحث عن المستخدم
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("اسم المستخدم أو كلمة المرور غير صحيحة"));
+    public User authenticateUser(String usernameOrEmail, String password) {
+        User user = userRepository.findByUsername(usernameOrEmail)
+                .orElseGet(() -> userRepository.findByEmail(usernameOrEmail)
+                        .orElseThrow(() -> new RuntimeException("اسم المستخدم أو كلمة المرور غير صحيحة")));
 
-        // ============================================================
-        // passwordEncoder.matches(): مقارنة كلمة المرور مع الـ hash
-        //
-        // هذه هي الطريقة الوحيدة للتحقق من كلمة المرور
-        // لأن BCrypt هو One-way hash (لا يمكن فكه)
-        //
-        // matches(password, user.getPassword()):
-        // - تشفر password
-        // - تقارنها مع الـ hash المخزن
-        // - ترجع true إذا متطابقتين
-        // ============================================================
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("اسم المستخدم أو كلمة المرور غير صحيحة");
         }

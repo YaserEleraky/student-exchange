@@ -65,29 +65,23 @@ public class CustomUserDetailsService implements UserDetailsService {
                         .orElseThrow(() -> new UsernameNotFoundException(
                                 "المستخدم غير موجود باسم: " + usernameOrEmail)));
 
-        // ============================================================
-        // تحويل User إلى UserPrincipal
-        // UserPrincipal يطبق UserDetails - وهذا ما يتوقعه Spring Security
-        // ============================================================
-        return new UserPrincipal(user);
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
     }
 
-    /**
-     * loadUserById: تحميل المستخدم بالـ ID
-     *
-     * هذه الدالة مهمة جداً لـ JWT!
-     * عندما نستخرج ID المستخدم من JWT Token،
-     * نستخدم هذه الدالة لتحميل بيانات المستخدم كاملة
-     *
-     * @param id معرف المستخدم (من JWT Token)
-     * @return UserDetails
-     */
     @Transactional(readOnly = true)
     public UserDetails loadUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "المستخدم غير موجود بالـ ID: " + id));
 
-        return new UserPrincipal(user);
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
     }
 }

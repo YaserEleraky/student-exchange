@@ -105,61 +105,74 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // ============================================================
-        // الخطوة 1: استخراج JWT من الـ Header
-        // ============================================================
-        String token = getTokenFromRequest(request);
-        // ============================================================
-        // الخطوة 2: التحقق من صحة التوكن
-        // StringUtils.hasText(): هل النص موجود وليس فارغاً؟
-        // ============================================================
-        if(StringUtils.hasText(token) && tokenProvider.validateToken(token)){
+        try {
+            SecurityContextHolder.clearContext();
             // ============================================================
-            // الخطوة 3: استخراج ID المستخدم من التوكن
+            // الخطوة 1: استخراج JWT من الـ Header
             // ============================================================
-            Long userId = tokenProvider.getUserIdFromToken(token);
+            String token = getTokenFromRequest(request);
+            // ============================================================
+            // الخطوة 2: التحقق من صحة التوكن
+            // StringUtils.hasText(): هل النص موجود وليس فارغاً؟
+            // ============================================================
+            if(StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
+                // ============================================================
+                // الخطوة 3: استخراج ID المستخدم من التوكن
+                // ============================================================
+                Long userId = tokenProvider.getUserIdFromToken(token);
 
-            // ============================================================
-            // الخطوة 4: تحميل بيانات المستخدم كاملة من قاعدة البيانات
-            // لماذا نحمله من قاعدة البيانات؟ لماذا لا نستخدم البيانات في JWT؟
-            // 1. البيانات في JWT قد تكون قديمة (تغيرت صلاحيات المستخدم مثلاً)
-            // 2. نحتاج الأدوار والصلاحيات من قاعدة البيانات
-            // 3. التحقق من أن المستخدم لا يزال موجوداً (لم يُحذف)
-            // ============================================================
-            UserDetails userDetails = customUserDetailsService.loadUserById(userId);
+                // ============================================================
+                // الخطوة 4: تحميل بيانات المستخدم كاملة من قاعدة البيانات
+                // لماذا نحمله من قاعدة البيانات؟ لماذا لا نستخدم البيانات في JWT؟
+                // 1. البيانات في JWT قد تكون قديمة (تغيرت صلاحيات المستخدم مثلاً)
+                // 2. نحتاج الأدوار والصلاحيات من قاعدة البيانات
+                // 3. التحقق من أن المستخدم لا يزال موجوداً (لم يُحذف)
+                // ============================================================
+                UserDetails userDetails = customUserDetailsService.loadUserById(userId);
 
-            // ============================================================
-            // الخطوة 5: إنشاء Authentication Object
-            //
-            // UsernamePasswordAuthenticationToken:
-            // - النوع الأساسي للمصادقة في Spring Security
-            // - المعامل الأول: Principal (المستخدم)
-            // - المعامل الثاني: Credentials (كلمة المرور - null لأننا استخدمنا JWT)
-            // - المعامل الثالث: Authorities (الصلاحيات)
-            // ============================================================
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,  // لا نحتاج كلمة المرور هنا
-                            userDetails.getAuthorities());
+                // ============================================================
+                // الخطوة 5: إنشاء Authentication Object
+                //
+                // UsernamePasswordAuthenticationToken:
+                // - النوع الأساسي للمصادقة في Spring Security
+                // - المعامل الأول: Principal (المستخدم)
+                // - المعامل الثاني: Credentials (كلمة المرور - null لأننا استخدمنا JWT)
+                // - المعامل الثالث: Authorities (الصلاحيات)
+                // ============================================================
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,  // لا نحتاج كلمة المرور هنا
+                                userDetails.getAuthorities());
 
-            // ============================================================
-            // إضافة تفاصيل إضافية (IP, Session ID, إلخ)
-            // ============================================================
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+                // ============================================================
+                // إضافة تفاصيل إضافية (IP, Session ID, إلخ)
+                // ============================================================
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            // ============================================================
-            // الخطوة 6: تعيين المستخدم في SecurityContext
-            //
-            // SecurityContextHolder:
-            // - يحمل SecurityContext للـ Thread الحالي
-            // - بعد هذا السطر، Spring Security يعرف من هو المستخدم
-            // - يمكننا استخدام SecurityContextHolder.getContext().getAuthentication()
-            //   في أي مكان في الكود للحصول على المستخدم الحالي
-            // ============================================================
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+                // طباعة تفاصيل المصادقة إلى وحدة التحكم
+                System.out.println("*************************************************** " +
+                        "Authentication details: *****************************************************" +
+                        "" + authentication.toString());
+                // ============================================================
+                // الخطوة 6: تعيين المستخدم في SecurityContext
+                //
+                // SecurityContextHolder:
+                // - يحمل SecurityContext للـ Thread الحالي
+                // - بعد هذا السطر، Spring Security يعرف من هو المستخدم
+                // - يمكننا استخدام SecurityContextHolder.getContext().getAuthentication()
+                //   في أي مكان في الكود للحصول على المستخدم الحالي
+                // ============================================================
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }catch (Exception e) {
+            System.out.println("*************************************************** " +
+                    "Error while filtering: *****************************************************" +
+                    "" + e.getMessage());
+            e.printStackTrace();
+
+            }
+
 
         // ============================================================
         // الخطوة 7: متابعة سلسلة الفلاتر

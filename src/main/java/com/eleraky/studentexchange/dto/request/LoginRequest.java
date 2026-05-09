@@ -39,8 +39,8 @@ public class LoginRequest {
     // - يمنع السلاسل التي تحتوي على مسافات فقط "   "
     // message: رسالة الخطأ التي ستظهر للمستخدم
     // ============================================================
-    @NotBlank(message = "UserName Required")
-    private String username;
+    @NotBlank(message = "Username or Email Required")
+    private String usernameOrEmail;
 
     @NotBlank(message = "Password Required")
     private String password;

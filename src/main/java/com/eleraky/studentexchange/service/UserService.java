@@ -36,7 +36,7 @@ public interface  UserService {
      * التحقق من بيانات تسجيل الدخول
      * ترجع المستخدم إذا كانت البيانات صحيحة
      */
-    User authenticateUser(String username, String password);
+    User authenticateUser(String usernameOrEmail, String password);
     // ============================================================
     // الحصول على جميع المستخدمين
     // List<UserResponse>: قائمة بكل المستخدمين
