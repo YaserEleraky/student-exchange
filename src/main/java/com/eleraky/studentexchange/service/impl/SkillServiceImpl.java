@@ -208,26 +208,22 @@ public class SkillServiceImpl implements SkillService {
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalSkills", userSkills.size());
-        stats.put("teachSkills", userSkills.stream()
-                .filter(s -> s.getSkillType() == Skill.SkillType.TEACH).count());
-        stats.put("learnSkills", userSkills.stream()
-                .filter(s -> s.getSkillType() == Skill.SkillType.LEARN).count());
+        stats.put("teachSkills", userSkills.stream().filter(s -> s.getSkillType() == Skill.SkillType.TEACH).count());
+        stats.put("learnSkills", userSkills.stream().filter(s -> s.getSkillType() == Skill.SkillType.LEARN).count());
 
         // ============================================================
         // إحصائيات حسب المستوى
         // ============================================================
         Map<String, Long> byLevel = new HashMap<>();
         for (Skill.SkillLevel level : Skill.SkillLevel.values()) {
-            byLevel.put(level.name(), userSkills.stream()
-                    .filter(s -> s.getSkillLevel() == level).count());
+            byLevel.put(level.name(), userSkills.stream().filter(s -> s.getSkillLevel() == level).count());
         }
         stats.put("byLevel", byLevel);
 
         // ============================================================
         // إحصائيات حسب التصنيف
         // ============================================================
-        Map<String, Long> byCategory = userSkills.stream()
-                .collect(Collectors.groupingBy(
+        Map<String, Long> byCategory = userSkills.stream().collect(Collectors.groupingBy(
                         s -> s.getCategory() != null ? s.getCategory() : "بدون تصنيف",
                         Collectors.counting()));
         stats.put("byCategory", byCategory);

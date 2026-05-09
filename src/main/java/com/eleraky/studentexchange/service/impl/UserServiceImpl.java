@@ -15,6 +15,7 @@ import com.eleraky.studentexchange.service.UserService;
 // @Service: تخبر Spring أن هذه الفئة هي Service
 // Spring سينشئ منها Bean ويديرها تلقائياً
 // ============================================================
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 // ============================================================
@@ -47,7 +48,11 @@ public class UserServiceImpl implements UserService{
 
     @Autowired
     private UserRepository userRepository;
-
+    // ============================================================
+// حقن PasswordEncoder
+// ============================================================
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     @Override
     public UserResponse createUser(CreateUserRequest createUserRequest){
 
@@ -86,6 +91,81 @@ public class UserServiceImpl implements UserService{
         // تحويل User إلى UserResponse (بدون كلمة المرور)
         // ============================================================
         return mapToResponse(savedUser);
+    }
+
+    /**
+     * registerUser: تسجيل مستخدم جديد مع تشفير كلمة المرور
+     *
+     * الفرق عن createUser:
+     * - createUser: تحفظ كلمة المرور كما هي (نص عادي) - ⚠️ غير آمن
+     * - registerUser: تشفر كلمة المرور قبل الحفظ - ✅ آمن
+     *
+     * لماذا التشفير مهم؟
+     * 1. إذا تم اختراق قاعدة البيانات، كلمات المرور تبقى محمية
+     * 2. حتى المطورين لا يستطيعون معرفة كلمات مرور المستخدمين
+     * 3. متطلب أمني أساسي في أي نظام
+     */
+    @Override
+    public UserResponse registerUser(CreateUserRequest request) {
+        // التحقق من عدم وجود username مكرر
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("اسم المستخدم موجود بالفعل: " + request.getUsername());
+        }
+
+        // التحقق من عدم وجود email مكرر
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("البريد الإلكتروني مستخدم بالفعل: " + request.getEmail());
+        }
+
+        // إنشاء مستخدم جديد
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+
+        // ============================================================
+        // passwordEncoder.encode(): تشفير كلمة المرور
+        // النتيجة: سلسلة BCrypt hash
+        // مثال: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+        // ============================================================
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        user.setFullName(request.getFullName());
+        user.setBio(request.getBio());
+
+        User savedUser = userRepository.save(user);
+        return mapToResponse(savedUser);
+    }
+
+    /**
+     * authenticateUser: التحقق من بيانات تسجيل الدخول
+     *
+     * @param username اسم المستخدم
+     * @param password كلمة المرور (نص عادي)
+     * @return User إذا كانت البيانات صحيحة
+     * @throws RuntimeException إذا كانت البيانات خاطئة
+     */
+    @Override
+    public User authenticateUser(String username, String password) {
+        // البحث عن المستخدم
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("اسم المستخدم أو كلمة المرور غير صحيحة"));
+
+        // ============================================================
+        // passwordEncoder.matches(): مقارنة كلمة المرور مع الـ hash
+        //
+        // هذه هي الطريقة الوحيدة للتحقق من كلمة المرور
+        // لأن BCrypt هو One-way hash (لا يمكن فكه)
+        //
+        // matches(password, user.getPassword()):
+        // - تشفر password
+        // - تقارنها مع الـ hash المخزن
+        // - ترجع true إذا متطابقتين
+        // ============================================================
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("اسم المستخدم أو كلمة المرور غير صحيحة");
+        }
+
+        return user;
     }
 
     @Override

@@ -20,7 +20,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
+# ============================================================
+# إعدادات JWT
+# ============================================================
+app:
+  jwt:
+    secret: this-is-a-very-long-secret-key-for-jwt-token-generation-2024-minimum-256-bits
+    expiration: 86400000
 logging:
   level:
     root: INFO

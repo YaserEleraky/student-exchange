@@ -6,6 +6,7 @@ package com.eleraky.studentexchange.service;
 import com.eleraky.studentexchange.dto.request.CreateUserRequest;
 import com.eleraky.studentexchange.dto.request.UpdateUserRequest;
 import com.eleraky.studentexchange.dto.response.UserResponse;
+import com.eleraky.studentexchange.model.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,16 @@ public interface  UserService {
     // ============================================================
 
     UserResponse createUser(CreateUserRequest createUserRequest);
+    /**
+     * تسجيل مستخدم جديد مع تشفير كلمة المرور
+     */
+    UserResponse registerUser(CreateUserRequest request);
 
+    /**
+     * التحقق من بيانات تسجيل الدخول
+     * ترجع المستخدم إذا كانت البيانات صحيحة
+     */
+    User authenticateUser(String username, String password);
     // ============================================================
     // الحصول على جميع المستخدمين
     // List<UserResponse>: قائمة بكل المستخدمين

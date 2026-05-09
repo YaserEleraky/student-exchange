@@ -69,6 +69,43 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- ============================================================
+Spring Security: إطار عمل الأمان
+يوفر: المصادقة (Authentication) والصلاحيات (Authorization)
+المصادقة = من أنت؟ (تسجيل الدخول)
+الصلاحيات = ماذا تستطيع أن تفعل؟ (الأدوار)
+مصدرها: spring.io - فريق Spring الرسمي
+============================================================ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- ============================================================
+        JJWT (Java JWT): مكتبة للتعامل مع JSON Web Tokens
+        - jjwt-api: الواجهات الأساسية
+        - jjwt-impl: التنفيذ (وقت التشغيل فقط)
+        - jjwt-jackson: لتحويل JSON (وقت التشغيل فقط)
+        مصدرها: github.com/jwtk/jjwt - المكتبة الأكثر شيوعاً لـ JWT في Java
+        ============================================================ -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.12.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.12.5</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.12.5</version>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
