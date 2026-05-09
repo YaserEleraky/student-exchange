@@ -80,7 +80,7 @@ public class UserServiceImpl implements UserService{
         user.setFullName(createUserRequest.getFullName());
         user.setBio(createUserRequest.getBio());
         user.setPassword(createUserRequest.getPassword());
-
+        user.setRole(createUserRequest.getRole() != null ? createUserRequest.getRole() : User.Role.USER);
         // ============================================================
         // حفظ المستخدم في قاعدة البيانات
         // save() ترجع المستخدم بعد الحفظ (مع ID الجديد)
@@ -131,6 +131,7 @@ public class UserServiceImpl implements UserService{
 
         user.setFullName(request.getFullName());
         user.setBio(request.getBio());
+        user.setRole(request.getRole() != null ? request.getRole() : User.Role.USER);
 
         User savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
@@ -139,7 +140,7 @@ public class UserServiceImpl implements UserService{
     /**
      * authenticateUser: التحقق من بيانات تسجيل الدخول
      *
-     * @param username اسم المستخدم
+     * @param_username اسم المستخدم
      * @param password كلمة المرور (نص عادي)
      * @return User إذا كانت البيانات صحيحة
      * @throws RuntimeException إذا كانت البيانات خاطئة

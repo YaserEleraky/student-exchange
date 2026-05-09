@@ -37,4 +37,15 @@ public class AuthController {
         JwtResponse response = new JwtResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getFullName());
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/admin/login")
+    public ResponseEntity<JwtResponse> adminLogin(@Valid @RequestBody LoginRequest request) {
+        User user = userService.authenticateUser(request.getUsernameOrEmail(), request.getPassword());
+        if (user.getRole() != User.Role.ADMIN && user.getRole() != User.Role.SUPER_ADMIN) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        String jwt = tokenProvider.generateToken(user);
+        JwtResponse response = new JwtResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getFullName());
+        return ResponseEntity.ok(response);
+    }
 }

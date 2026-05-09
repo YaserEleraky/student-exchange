@@ -129,6 +129,14 @@ public class User {
     // createdAt: تاريخ ووقت إنشاء الحساب
     // updatable = false: لا يمكن تحديث هذا الحقل بعد إنشائه
     // ============================================================
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role = Role.USER;
+
+    public enum Role {
+        USER, ADMIN, SUPER_ADMIN
+    }
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
