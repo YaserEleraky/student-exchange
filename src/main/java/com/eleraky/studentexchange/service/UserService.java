@@ -7,6 +7,7 @@ import com.eleraky.studentexchange.dto.request.CreateUserRequest;
 import com.eleraky.studentexchange.dto.request.UpdateUserRequest;
 import com.eleraky.studentexchange.dto.response.UserResponse;
 import com.eleraky.studentexchange.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,7 @@ public interface  UserService {
     // UserResponse: نرجع بيانات المستخدم بعد الإنشاء (بدون كلمة المرور)
     // ============================================================
 
-    UserResponse createUser(CreateUserRequest createUserRequest);
+    UserResponse createUser(CreateUserRequest createUserRequest, MultipartFile avatar);
     /**
      * تسجيل مستخدم جديد مع تشفير كلمة المرور
      */
@@ -60,6 +61,8 @@ public interface  UserService {
     // request: البيانات الجديدة
     // ============================================================
     Optional<UserResponse> updateUser(Long id, UpdateUserRequest request);
+
+    Optional<UserResponse> updateUserWithAvatar(Long id, UpdateUserRequest request, MultipartFile avatar);
 
     // ============================================================
     // حذف مستخدم

@@ -30,13 +30,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/api/auth/**").permitAll()
+                        // ✅ الصور تحتاج توكن
+                        .requestMatchers("/uploads/**").authenticated()
                         .requestMatchers("/api/skills/search/**").permitAll()
                         .requestMatchers("/api/skills/category/**").permitAll()
                         .requestMatchers("/api/skills/type/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/superadmin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
+                        //.requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/api/users", "/api/users/**").permitAll()
                         .requestMatchers("/api/skills/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )

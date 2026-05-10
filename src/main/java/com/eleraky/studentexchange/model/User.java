@@ -167,4 +167,12 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();  // تحديث الوقت الحالي
     }
+
+    // ============================================================
+    // ✅ Avatar: الصورة الرمزية المرفوعة من المستخدم
+    // نحفظ مسار الملف فقط - الملف نفسه على السيرفر
+    // مثال: /uploads/avatars/user_1_20260115.jpg
+    // ============================================================
+    @Column(name = "avatar_path", length = 500)
+    private String avatarPath;
 }

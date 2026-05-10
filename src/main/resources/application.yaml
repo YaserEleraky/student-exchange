@@ -12,6 +12,7 @@ spring:
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
+    data: classpath:data.sql
   
   jpa:
     hibernate:
@@ -27,6 +28,13 @@ app:
   jwt:
     secret: this-is-a-very-long-secret-key-for-jwt-token-generation-2024-minimum-256-bits
     expiration: 86400000
+
+    # ============================================================
+    # ✅ مجلد حفظ الصور الرمزية
+    # ============================================================
+  upload:
+    avatar-dir: uploads/avatars  # المجلد النسبي داخل المشروع
+
 logging:
   level:
     root: INFO

@@ -136,6 +136,7 @@ public class JwtTokenProvider {
                 .claim("username", user.getUsername())
                 .claim("fullName", user.getFullName())
                 .claim("email", user.getEmail())
+                .claim("roles", user.getRole().name())  // إضافة الأدوار من المستخدم
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())

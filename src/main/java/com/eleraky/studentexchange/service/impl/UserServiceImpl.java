@@ -1,9 +1,18 @@
 package com.eleraky.studentexchange.service.impl;
 
-
 // ============================================================
 // نستورد كل المكونات المطلوبة
 // ============================================================
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.eleraky.studentexchange.dto.request.CreateUserRequest;
 import com.eleraky.studentexchange.dto.request.UpdateUserRequest;
 import com.eleraky.studentexchange.dto.response.UserResponse;
@@ -11,33 +20,9 @@ import com.eleraky.studentexchange.model.User;
 import com.eleraky.studentexchange.repository.UserRepository;
 import com.eleraky.studentexchange.service.UserService;
 
-// ============================================================
-// @Service: تخبر Spring أن هذه الفئة هي Service
-// Spring سينشئ منها Bean ويديرها تلقائياً
-// ============================================================
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-// ============================================================
-// @Autowired: حقن التبعيات (Dependency Injection)
-// بدلاً من إنشاء كائن UserRepository يدوياً، Spring يوفره لنا
-// ============================================================
-import org.springframework.beans.factory.annotation.Autowired;
-
-// ============================================================
-// @Transactional: إدارة المعاملات (Transactions)
-// إذا فشل أي جزء من العملية، يتم التراجع عن كل التغييرات
-// ============================================================
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-
-@Service  // نعلم Spring أن هذه Service
-@Transactional  // كل الدوال في هذه الفئة ستكون Transactional
-public class UserServiceImpl implements UserService{
+@Service // نعلم Spring أن هذه Service
+@Transactional // كل الدوال في هذه الفئة ستكون Transactional
+public class UserServiceImpl implements UserService {
 
     // ============================================================
     // @Autowired: Spring يحقن (inject) كائن UserRepository هنا
@@ -48,13 +33,15 @@ public class UserServiceImpl implements UserService{
 
     @Autowired
     private UserRepository userRepository;
-    // ============================================================
-// حقن PasswordEncoder
-// ============================================================
+
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
     @Override
-    public UserResponse createUser(CreateUserRequest createUserRequest){
+    public UserResponse createUser(CreateUserRequest createUserRequest, MultipartFile avatar) {
 
         // ============================================================
         // التحقق من عدم وجود username مكرر
@@ -65,7 +52,7 @@ public class UserServiceImpl implements UserService{
         // =====================================9=======================
         // التحقق من عدم وجود email مكرر
         // =================
-        if(userRepository.existsByEmail(createUserRequest.getEmail())){
+        if (userRepository.existsByEmail(createUserRequest.getEmail())) {
             throw new RuntimeException("Email is Already Exist" + createUserRequest.getEmail());
         }
 
@@ -79,7 +66,7 @@ public class UserServiceImpl implements UserService{
         user.setEmail(createUserRequest.getEmail());
         user.setFullName(createUserRequest.getFullName());
         user.setBio(createUserRequest.getBio());
-        user.setPassword(createUserRequest.getPassword());
+        user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
         user.setRole(createUserRequest.getRole() != null ? createUserRequest.getRole() : User.Role.USER);
         // ============================================================
         // حفظ المستخدم في قاعدة البيانات
@@ -159,7 +146,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    @Transactional(readOnly = true)  // للقراءة فقط - أداء أفضل
+    @Transactional(readOnly = true) // للقراءة فقط - أداء أفضل
     public List<UserResponse> getAllUsers() {
         // ============================================================
         // نجلب كل المستخدمين من قاعدة البيانات
@@ -172,7 +159,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public Optional<UserResponse> getUserById(Long id) {
 
-        if (!userRepository.existsById(id)){
+        if (!userRepository.existsById(id)) {
             throw new RuntimeException("User Not Found" + id);
         }
 
@@ -181,7 +168,7 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public Optional<UserResponse> getUserByUsername(String username) {
-        if (!userRepository.existsByUsername(username)){
+        if (!userRepository.existsByUsername(username)) {
             throw new RuntimeException("User Not Found" + username);
         }
         return userRepository.findByUsername(username).map(this::mapToResponse);
@@ -190,16 +177,44 @@ public class UserServiceImpl implements UserService{
     @Override
     public Optional<UserResponse> updateUser(Long id, UpdateUserRequest request) {
         return userRepository.findById(id).map(user -> {
-            if (request.getFullName() != null) user.setFullName(request.getFullName());
-            if (request.getBio() != null) user.setBio(request.getBio());
-            if (request.getPassword() != null && !request.getPassword().isEmpty()) user.setPassword(request.getPassword());
+            if (request.getFullName() != null)
+                user.setFullName(request.getFullName());
+            if (request.getBio() != null)
+                user.setBio(request.getBio());
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+            return mapToResponse(userRepository.save(user));
+        });
+    }
+
+    @Override
+    public Optional<UserResponse> updateUserWithAvatar(Long id, UpdateUserRequest request, MultipartFile avatar) {
+        return userRepository.findById(id).map(user -> {
+            if (request.getFullName() != null)
+                user.setFullName(request.getFullName());
+            if (request.getBio() != null)
+                user.setBio(request.getBio());
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+            if (avatar != null && !avatar.isEmpty()) {
+                if (user.getAvatarPath() != null) {
+                    fileStorageService.deleteAvatar(user.getAvatarPath());
+                }
+                try {
+                    user.setAvatarPath(fileStorageService.saveAvatar(avatar, id));
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to save avatar: " + e.getMessage());
+                }
+            }
             return mapToResponse(userRepository.save(user));
         });
     }
 
     @Override
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)){
+        if (!userRepository.existsById(id)) {
             throw new RuntimeException("User Not Found" + id);
         }
         userRepository.deleteById(id);
@@ -225,10 +240,10 @@ public class UserServiceImpl implements UserService{
         response.setEmail(user.getEmail());
         // ⚠️ لا نرسل كلمة المرور أبداً في الاستجابة!
         response.setFullName(user.getFullName());
+        response.setAvatarPath(user.getAvatarPath()); // ✅ إضافة
         response.setBio(user.getBio());
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         return response;
     }
 }
-

@@ -15,6 +15,7 @@ public class UserResponse {
     private String email;
     private String fullName;
     private String bio;
+    private String avatarPath;    // ✅ الصورة المرفوعة
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     // ⚠️ لا يوجد حقل password هنا - أمان!
