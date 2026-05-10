@@ -1,19 +1,41 @@
-# application.yml - الإصدار المعدل
 server:
   port: 8080
 
 spring:
   application:
     name: student-exchange
-  
+
+  # ============================================================
+  # OAuth2 - Google و GitHub
+  # استبدل YOUR_... بالقيم الحقيقية من Google Console و GitHub
+  # ============================================================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 1081331145672-ulc2vse5anipjfgs6hrb87hmdbeuh9ma.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+          github:
+            client-id: Ov23liko0ocAI2rOwDhY
+            client-secret: 410ebc44f13d966649e390c3750877dddc28173c
+            scope:
+              - user:email
+              - read:user
+
   datasource:
-    # اتصل بقاعدة البيانات الافتراضية postgres أولاً
     url: jdbc:postgresql://localhost:5433/student_exchange_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
-    data: classpath:data.sql
-  
+
+  sql:
+    init:
+      data-locations: classpath:data.sql
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,23 +43,17 @@ spring:
     properties:
       hibernate:
         format_sql: true
-# ============================================================
-# إعدادات JWT
-# ============================================================
+
 app:
   jwt:
     secret: this-is-a-very-long-secret-key-for-jwt-token-generation-2024-minimum-256-bits
     expiration: 86400000
-
-    # ============================================================
-    # ✅ مجلد حفظ الصور الرمزية
-    # ============================================================
   upload:
-    avatar-dir: uploads/avatars  # المجلد النسبي داخل المشروع
+    avatar-dir: uploads/avatars
 
 logging:
   level:
     root: INFO
-    com.eleraky: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
+    "[com.eleraky]": DEBUG
+    "[org.springframework.web]": DEBUG
+    "[org.hibernate.SQL]": DEBUG

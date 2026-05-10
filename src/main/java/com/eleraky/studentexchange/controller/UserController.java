@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -163,28 +164,29 @@ public class UserController {
     public ResponseEntity<?> getAvatar(@PathVariable Long id) {
         User user = userRepository.findById(id).orElse(null);
 
-        if (user == null || user.getAvatarPath() == null) {
-            return ResponseEntity.notFound().build();
+        if (user == null) return ResponseEntity.notFound().build();
+
+        // Try local file first
+        if (user.getAvatarPath() != null) {
+            try {
+                Path path = Paths.get(user.getAvatarPath().substring(1));
+                if (Files.exists(path)) {
+                    byte[] imageBytes = Files.readAllBytes(path);
+                    String contentType = Files.probeContentType(path);
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(contentType != null ? contentType : "image/jpeg"))
+                            .body(imageBytes);
+                }
+            } catch (IOException ignored) {}
         }
 
-        try {
-            // إزالة أول حرف / من المسار لأن Paths.get() لا يحتاجه
-            String avatarPath = user.getAvatarPath().substring(1);
-            Path path = Paths.get(avatarPath);
-
-            if (!Files.exists(path)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            byte[] imageBytes = Files.readAllBytes(path);
-            String contentType = Files.probeContentType(path);
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType != null ? contentType : "image/jpeg"))
-                    .body(imageBytes);
-
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
+        // Fallback: redirect to OAuth2 provider image URL (Google / GitHub)
+        if (user.getImageUrl() != null) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, user.getImageUrl())
+                    .build();
         }
+
+        return ResponseEntity.notFound().build();
     }
 }

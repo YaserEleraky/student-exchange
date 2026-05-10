@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.nio.file.*;
 import java.util.UUID;
 
@@ -94,6 +97,42 @@ public class FileStorageService {
      *
      * @param avatarPath مسار الصورة القديمة
      */
+    /**
+     * تحميل وحفظ صورة من رابط URL (Google / GitHub avatar)
+     */
+    public String saveAvatarFromUrl(String imageUrl, Long userId) throws IOException {
+        if (imageUrl == null || imageUrl.isBlank()) return null;
+
+        HttpURLConnection connection = (HttpURLConnection) URI.create(imageUrl).toURL().openConnection();
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(5000);
+        connection.connect();
+
+        // تحديد الامتداد من نوع المحتوى
+        String contentType = connection.getContentType();
+        String extension = ".jpg";
+        if (contentType != null) {
+            if (contentType.contains("png"))  extension = ".png";
+            else if (contentType.contains("gif"))  extension = ".gif";
+            else if (contentType.contains("webp")) extension = ".webp";
+        }
+
+        byte[] imageBytes;
+        try (InputStream is = connection.getInputStream()) {
+            imageBytes = is.readAllBytes();
+        }
+
+        String uniqueId    = UUID.randomUUID().toString().substring(0, 8);
+        String newFilename = "user_" + userId + "_" + uniqueId + extension;
+
+        Path uploadPath = Paths.get(avatarDir);
+        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+
+        Files.write(uploadPath.resolve(newFilename), imageBytes);
+
+        return "/" + avatarDir + "/" + newFilename;
+    }
+
     public void deleteAvatar(String avatarPath) {
         if (avatarPath != null && !avatarPath.isEmpty()) {
             try {

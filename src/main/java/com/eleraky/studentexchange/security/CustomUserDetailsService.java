@@ -65,11 +65,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                         .orElseThrow(() -> new UsernameNotFoundException(
                                 "المستخدم غير موجود باسم: " + usernameOrEmail)));
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .roles(user.getRole().name())
-                .build();
+        return buildUserDetails(user);
     }
 
     @Transactional(readOnly = true)
@@ -78,9 +74,14 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "المستخدم غير موجود بالـ ID: " + id));
 
+        return buildUserDetails(user);
+    }
+
+    // OAuth2 users have no password — use empty string so Spring Security doesn't reject them
+    private UserDetails buildUserDetails(User user) {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
-                .password(user.getPassword())
+                .password(user.getPassword() != null ? user.getPassword() : "")
                 .roles(user.getRole().name())
                 .build();
     }

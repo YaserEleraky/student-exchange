@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -36,6 +38,20 @@ public class AuthController {
         String jwt = tokenProvider.generateToken(user);
         JwtResponse response = new JwtResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getFullName());
         return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // GET /api/auth/oauth2/success - redirect هنا بعد تسجيل الدخول بـ Google أو GitHub
+    // ============================================================
+    @GetMapping("/oauth2/success")
+    public ResponseEntity<Map<String, Object>> oauthSuccess(
+            @RequestParam String token,
+            @RequestParam String provider) {
+        return ResponseEntity.ok(Map.of(
+            "message", "Hello from login " + provider,
+            "token",   token,
+            "type",    "Bearer"
+        ));
     }
 
     @PostMapping("/admin/login")

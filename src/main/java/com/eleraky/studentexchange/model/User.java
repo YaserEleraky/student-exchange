@@ -101,9 +101,9 @@ public class User {
     @Column(nullable = false, unique = true,  length = 100)
     private String email;
 
-    @NotBlank(message = "Password Required")
-    @Size(min = 6, max = 120, message = "Password Should be at least 6 chars")
-    @Column(nullable = false, length = 120)  // 120 حرف لتشفير BCrypt لاحقاً
+    // OAuth2 users have no password — nullable
+    @Size(max = 120)
+    @Column(nullable = true, length = 120)
     private String password;
 
     // ============================================================
@@ -175,4 +175,23 @@ public class User {
     // ============================================================
     @Column(name = "avatar_path", length = 500)
     private String avatarPath;
+
+    // ============================================================
+    // OAuth2 - من أين سجّل المستخدم؟ Google أم GitHub أم عادي؟
+    // ============================================================
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private AuthProvider provider = AuthProvider.LOCAL;
+
+    public enum AuthProvider {
+        LOCAL, GOOGLE, GITHUB
+    }
+
+    // معرف المستخدم عند Google أو GitHub
+    @Column(name = "provider_id", length = 100)
+    private String providerId;
+
+    // رابط الصورة من Google أو GitHub
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 }
